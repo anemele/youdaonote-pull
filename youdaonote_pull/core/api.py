@@ -3,7 +3,7 @@ import os
 
 import requests
 
-from core.common import get_script_directory
+from .common import get_script_directory
 
 
 class YoudaoNoteApi(object):
