@@ -13,9 +13,9 @@ if not osp.exists(CONFIG_DIR):
 
 @dataclass
 class Config(DataClassTOMLMixin):
-    local_dir: Optional[str]
-    ydnote_dir: Optional[str]
-    smms_secret_token: Optional[str]
+    local_dir: Optional[str] = field(default=None)
+    ydnote_dir: Optional[str] = field(default=None)
+    smms_secret_token: Optional[str] = field(default=None)
     is_relative_path: bool = field(default=True)
 
 
