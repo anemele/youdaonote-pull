@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import os.path as osp
 import xml.etree.ElementTree as ET
 from typing import Tuple
 
@@ -91,7 +92,7 @@ class XmlElementConvert:
         element = kwargs.get("element")
         content = XmlElementConvert.get_text_by_key(element, "content")
 
-        table_data_str = f""  # f-string 多行字符串
+        table_data_str = ""  # f-string 多行字符串
         nl = "\r\n"  # 考虑 Windows 系统，换行符设为 \r\n
         table_data = json.loads(content)
         table_data_len = len(table_data["widths"])
@@ -119,7 +120,7 @@ class XmlElementConvert:
         for table_line in table_data_arr:
             table_data_str += "|"
             for table_data in table_line:
-                table_data_str += f" %s |" % table_data
+                table_data_str += " %s |" % table_data
             table_data_str += f"{nl}"
 
         return table_data_str
@@ -136,30 +137,35 @@ class XmlElementConvert:
         return ""
 
     @staticmethod
-    def _encode_string_to_md(original_text):
+    def _encode_string_to_md(original_text: str) -> str:
         """将字符串转义防止 markdown 识别错误"""
-        if len(original_text) <= 0 or original_text == " ":
+        if len(original_text) == 0 or original_text == " ":
             return original_text
 
-        original_text = original_text.replace("\\", "\\\\")  # \\ 反斜杠
-        original_text = original_text.replace("*", "\\*")  # \* 星号
-        original_text = original_text.replace("_", "\\_")  # \_ 下划线
-        original_text = original_text.replace("#", "\\#")  # \# 井号
+        original_text = (
+            original_text.replace("\\", "\\\\")  # \\ 反斜杠
+            .replace("*", "\\*")  # \* 星号
+            .replace("_", "\\_")  # \_ 下划线
+            .replace("#", "\\#")  # \# 井号
+        )
 
         # markdown 中需要转义的字符
-        original_text = original_text.replace("&", "&amp;")
-        original_text = original_text.replace("<", "&lt;")
-        original_text = original_text.replace(">", "&gt;")
-        original_text = original_text.replace("“", "&quot;")
-        original_text = original_text.replace("‘", "&apos;")
-
-        original_text = original_text.replace("\t", "&emsp;")
+        original_text = (
+            original_text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("“", "&quot;")
+            .replace("‘", "&apos;")
+            .replace("\t", "&emsp;")
+        )
 
         # 换行 <br>
-        original_text = original_text.replace("\r\n", "<br>")
-        original_text = original_text.replace("\n\r", "<br>")
-        original_text = original_text.replace("\r", "<br>")
-        original_text = original_text.replace("\n", "<br>")
+        original_text = (
+            original_text.replace("\r\n", "<br>")
+            .replace("\n\r", "<br>")
+            .replace("\r", "<br>")
+            .replace("\n", "<br>")
+        )
 
         return original_text
 
@@ -357,7 +363,7 @@ class YoudaoNoteConvert:
 
         # 如果换行符丢失，使用 md(content_str.replace('<br>', '<br><br>').replace('</div>', '</div><br><br>')).rstrip()
         new_content = md(content_str)
-        base = os.path.splitext(file_path)[0]
+        base = osp.splitext(file_path)[0]
         new_file_path = "".join([base, MARKDOWN_SUFFIX])
         os.rename(file_path, new_file_path)
         with open(new_file_path, "wb") as f:
@@ -389,7 +395,7 @@ class YoudaoNoteConvert:
                 continue
             line_content = convert_func(text=text, element=element, list_item=list_item)
             new_content_list.append(line_content)
-        return f"\r\n\r\n".join(new_content_list)  # 换行 1 行
+        return "\r\n\r\n".join(new_content_list)  # 换行 1 行
 
     @staticmethod
     def covert_xml_to_markdown(file_path) -> bool:
@@ -398,10 +404,10 @@ class YoudaoNoteConvert:
         :param file_path:
         :return:
         """
-        base = os.path.splitext(file_path)[0]
+        base = osp.splitext(file_path)[0]
         new_file_path = "".join([base, MARKDOWN_SUFFIX])
         # 如果文件为空，结束
-        if os.path.getsize(file_path) == 0:
+        if osp.getsize(file_path) == 0:
             os.rename(file_path, new_file_path)
             return False
 
@@ -441,25 +447,25 @@ class YoudaoNoteConvert:
             # 判断是否有内容
             if line_content:
                 new_content_list.append(line_content)
-        return f"\r\n\r\n".join(new_content_list)  # 换行 1 行
+        return "\r\n\r\n".join(new_content_list)  # 换行 1 行
 
     @staticmethod
-    def covert_json_to_markdown(file_path) -> str:
-        """
-        转换 Json 为 MarkDown
-        :param file_path:
-        :return:
-        """
-        base = os.path.splitext(file_path)[0]
-        new_file_path = "".join([base, MARKDOWN_SUFFIX])
+    def covert_json_to_markdown(file_path: str) -> str:
+        """转换 Json 为 MarkDown"""
+        base = osp.splitext(file_path)[0]
+        new_file_path = f"{base}{MARKDOWN_SUFFIX}"
+
         # 如果文件为空，结束
-        if os.path.getsize(file_path) == 0:
+        if osp.getsize(file_path) == 0:
             os.rename(file_path, new_file_path)
-            return False
+            return new_file_path
+
         new_content = YoudaoNoteConvert._covert_json_to_markdown_content(file_path)
-        with open(new_file_path, "wb") as f:
-            f.write(new_content.encode("utf-8"))
+        with open(new_file_path, "w", encoding="utf-8") as fp:
+            fp.write(new_content)
+
         # 删除旧文件
-        if os.path.exists(file_path):
+        if osp.exists(file_path):
             os.remove(file_path)
+
         return new_file_path
