@@ -6,27 +6,25 @@ import logging
 import os
 import platform
 import re
-import sys
-import time
-import traceback
 import xml.etree.ElementTree as ET
 from enum import Enum
 from typing import Tuple
 
-import requests
 from win32_setctime import setctime
 
-from .core import log
-from .core.api import YoudaoNoteApi
-from .core.common import get_script_directory
-from .core.covert import YoudaoNoteConvert
-from .core.image import ImagePull
+from . import log
+from .api import YoudaoNoteApi
+from .common import get_script_directory
+from .covert import YoudaoNoteConvert
+from .image import ImagePull
 
 __author__ = "Depp Wang (deppwxq@gmail.com)"
 __github__ = "https//github.com/DeppWang/youdaonote-pull"
 
 REGEX_SYMBOL = re.compile(r'[\\/:\*\?"<>\|]')  # 符号：\ / : * ? " < > |
 MARKDOWN_SUFFIX = ".md"
+
+log.init_logging()
 
 
 class FileType(Enum):

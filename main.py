@@ -3,13 +3,11 @@ import sys
 import time
 import traceback
 
-import requests
+from requests.exceptions import ProxyError, ConnectionError
 
-from youdaonote_pull import YoudaoNotePull, log
+from youdaonote_pull import YoudaoNotePull
 
-log.init_logging()
-
-start_time = int(time.time())
+start_time = time.perf_counter()
 
 try:
     youdaonote_pull = YoudaoNotePull()
@@ -21,14 +19,15 @@ try:
     youdaonote_pull.pull_dir_by_id_recursively(
         ydnote_dir_id, youdaonote_pull.root_local_dir
     )
-except requests.exceptions.ProxyError:
+except ProxyError:
     logging.info(
-        "请检查网络代理设置；也有可能是调用有道云笔记接口次数达到限制，请等待一段时间后重新运行脚本，若一直失败，可删除「cookies.json」后重试"
+        "请检查网络代理设置；也有可能是调用有道云笔记接口次数达到限制，请等待一段时间后重新运行脚本，"
+        "若一直失败，可删除「cookies.json」后重试"
     )
     traceback.print_exc()
     logging.info("已终止执行")
     sys.exit(1)
-except requests.exceptions.ConnectionError:
+except ConnectionError:
     logging.info(
         "网络错误，请检查网络是否正常连接。若突然执行中断，可忽略此错误，重新运行脚本"
     )
@@ -42,5 +41,5 @@ except Exception as err:
     logging.info("已终止执行")
     sys.exit(1)
 
-end_time = int(time.time())
-logging.info("运行完成！耗时 {} 秒".format(str(end_time - start_time)))
+end_time = time.perf_counter()
+logging.info(f"运行完成！耗时 {end_time - start_time:.3} 秒")
