@@ -4,31 +4,30 @@ import os.path as osp
 import platform
 import re
 import xml.etree.ElementTree as ET
-from enum import Enum
+from enum import Enum, auto
 from typing import Optional
 
 from win32_setctime import setctime
 
 from .api import YoudaoNoteSession
 from .config import CONFIG
-from .covert import YoudaoNoteConvert
+from .convert import YoudaoNoteConvert
 from .image import ImagePull
 
-REGEX_SYMBOL = re.compile(r'[\\/:\*\?"<>\|]')  # 符号：\ / : * ? " < > |
 MARKDOWN_SUFFIX = ".md"
 
 
 class FileType(Enum):
-    OTHER = 0
-    MARKDOWN = 1
-    XML = 2
-    JSON = 3
+    OTHER = auto()
+    MARKDOWN = auto()
+    XML = auto()
+    JSON = auto()
 
 
 class FileActionEnum(Enum):
-    CONTINUE = "跳过"
-    ADD = "新增"
-    UPDATE = "更新"
+    CONTINUE = auto()
+    ADD = auto()
+    UPDATE = auto()
 
 
 SESSION = YoudaoNoteSession()
@@ -67,65 +66,49 @@ class YoudaoNotePull:
 
         raise ValueError(f"「有道云笔记」指定目录不存在：{ydnote_dir}")
 
-    def _judge_type(self, file_id, youdao_file_suffix) -> Enum:
-        """
-        判断笔记类型
-        :param file_id:
-        :param youdao_file_suffix:
-        :return:
-        """
-        file_type = FileType.OTHER
+    def _judge_type(self, file_id, youdao_file_suffix: str) -> FileType:
+        """判断笔记类型"""
         # 1、如果文件是 .md 类型
         if youdao_file_suffix == MARKDOWN_SUFFIX:
-            file_type = FileType.MARKDOWN
-            return file_type
-        elif (
-            youdao_file_suffix == ".note"
-            or youdao_file_suffix == ".clip"
-            or youdao_file_suffix == ""
-        ):
+            return FileType.MARKDOWN
+        elif youdao_file_suffix in {".note", ".clip", ""}:
             response = SESSION.get_file_by_id(file_id)
+            content = response.content
             # 2、如果文件以 `<?xml` 开头
-            if response.content[:5] == b"<?xml":
-                file_type = FileType.XML
+            if content.startswith(b"<?xml"):
+                return FileType.XML
             # 3、如果文件以 `{` 开头
-            elif response.content.startswith(b'{"'):
-                file_type = FileType.JSON
-        return file_type
+            elif content.startswith(b'{"'):
+                return FileType.JSON
+        return FileType.OTHER
 
-    def _get_file_action(self, local_file_path, modify_time) -> Enum:
-        """
-        获取文件操作行为
-        :param local_file_path:
-        :param modify_time:
-        :return: FileActionEnum
-        """
+    def _get_file_action(
+        self, local_file_path: str, modify_time: float
+    ) -> FileActionEnum:
+        """获取文件操作行为"""
         # 如果不存在，则下载
-        if not os.path.exists(local_file_path):
+        if not osp.exists(local_file_path):
             return FileActionEnum.ADD
 
         # 如果已经存在，判断是否需要更新
         # 如果有道云笔记文件更新时间小于本地文件时间，说明没有更新，则不下载，跳过
-        if modify_time <= os.path.getmtime(local_file_path):
-            logging.info("此文件「%s」不更新，跳过", local_file_path)
+        if modify_time <= osp.getmtime(local_file_path):
+            logging.info(f"此文件「{local_file_path}」不更新，跳过")
             return FileActionEnum.CONTINUE
+
         # 同一目录存在同名 md 和 note 文件时，后更新文件将覆盖另一个
         return FileActionEnum.UPDATE
 
-    def _optimize_file_name(self, name) -> str:
-        """
-        优化文件名
-        :param name:
-        :return:
-        """
+    @staticmethod
+    def _optimize_file_name(name: str) -> str:
+        """优化文件名"""
         # 替换下划线
         regex_symbol = re.compile(r"[<]")  # 符号： <
         # 删除特殊字符
         del_regex_symbol = re.compile(r'[\\/":\|\*\?#>]')  # 符号：\ / " : | * ? # >
-        # 首尾的空格
-        name = name.replace("\n", "")
-        # 去除换行符
-        name = name.strip()
+
+        name = name.replace("\n", "")  # 去除换行符
+        name = name.strip()  # 首尾的空格
         # 替换一些特殊符号
         name = regex_symbol.sub("_", name)
         name = del_regex_symbol.sub("", name)
@@ -171,8 +154,8 @@ class YoudaoNotePull:
         self, file_id, file_name, local_dir, modify_time, create_time
     ):
         file_name = self._optimize_file_name(file_name)
-        youdao_file_suffix = os.path.splitext(file_name)[1]  # 笔记后缀
-        original_file_path = os.path.join(local_dir, file_name).replace(
+        youdao_file_suffix = osp.splitext(file_name)[1]  # 笔记后缀
+        original_file_path = osp.join(local_dir, file_name).replace(
             "\\", "/"
         )  # 原后缀路径
 
@@ -180,20 +163,18 @@ class YoudaoNotePull:
         file_type = self._judge_type(file_id, youdao_file_suffix)
 
         # 「文档」类型本地文件均已 .md 结尾
-        local_file_path = (
-            os.path.join(
-                local_dir, "".join([os.path.splitext(file_name)[0], MARKDOWN_SUFFIX])
-            ).replace("\\", "/")
-            if file_type != FileType.OTHER
-            else original_file_path
-        )
+        if file_type == FileType.OTHER:
+            local_file_path = original_file_path
+        else:
+            name, _ = osp.splitext(file_name)
+            local_file_path = osp.join(local_dir, f"{name}{MARKDOWN_SUFFIX}").replace(
+                "\\", "/"
+            )
 
         # 如果有有道云笔记是「文档」类型，则提示类型
-        tip = (
-            "，云笔记原格式为 {}".format(file_type.name)
-            if file_type != FileType.OTHER
-            else ""
-        )
+        tip = ""
+        if file_type != FileType.OTHER:
+            tip = f"，云笔记原格式为 {file_type.name}"
 
         file_action = self._get_file_action(local_file_path, modify_time)
         if file_action == FileActionEnum.CONTINUE:
