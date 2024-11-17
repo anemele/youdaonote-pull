@@ -7,7 +7,7 @@ from typing import Tuple
 MARKDOWN_SUFFIX = ".md"
 
 
-class XmlElementConvert(object):
+class XmlElementConvert:
     """
     XML Element 转换规则
     """
@@ -164,7 +164,7 @@ class XmlElementConvert(object):
         return original_text
 
 
-class JsonConvert(object):
+class JsonConvert:
     """
     json 转换规则
     """
@@ -339,7 +339,7 @@ class JsonConvert(object):
         return table_lines
 
 
-class YoudaoNoteConvert(object):
+class YoudaoNoteConvert:
     """
     有道云笔记 note 内容转换为 markdown 内容
     """

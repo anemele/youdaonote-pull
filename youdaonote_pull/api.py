@@ -1,28 +1,34 @@
 import json
+import os.path as osp
 
-import requests
+from requests import Session
+
+from .config import CONFIG_DIR
+
+cookies_path = osp.join(CONFIG_DIR, "cookies.json")
+
+"""
+有道云笔记 API 封装
+原理：https://depp.wang/2020/06/11/how-to-find-the-api-of-a-website-eg-note-youdao-com/
+"""
+
+ROOT_ID_URL = "https://note.youdao.com/yws/api/personal/file?method=getByPath&keyfrom=web&cstk={cstk}"
+DIR_MES_URL = (
+    "https://note.youdao.com/yws/api/personal/file/{dir_id}"
+    "?all=true&f=true&len=1000&sort=1"
+    "&isReverse=false&method=listPageByParentId&keyfrom=web&cstk={cstk}"
+)
+FILE_URL = (
+    "https://note.youdao.com/yws/api/personal/sync"
+    "?method=download&_system=macos&_systemVersion="
+    "&_screenWidth=1280&_screenHeight=800&_appName=ynote&_appuser=0123456789abcdeffedcba9876543210"
+    "&_vendor=official-website&_launch=16&_firstTime=&_deviceId=0123456789abcdef&_platform=web"
+    "&_cityCode=110000&_cityName=&sev=j1&keyfrom=web&cstk={cstk}"
+)
 
 
-class YoudaoNoteApi(object):
-    """
-    有道云笔记 API 封装
-    原理：https://depp.wang/2020/06/11/how-to-find-the-api-of-a-website-eg-note-youdao-com/
-    """
-
-    ROOT_ID_URL = "https://note.youdao.com/yws/api/personal/file?method=getByPath&keyfrom=web&cstk={cstk}"
-    DIR_MES_URL = (
-        "https://note.youdao.com/yws/api/personal/file/{dir_id}?all=true&f=true&len=1000&sort=1"
-        "&isReverse=false&method=listPageByParentId&keyfrom=web&cstk={cstk}"
-    )
-    FILE_URL = (
-        "https://note.youdao.com/yws/api/personal/sync?method=download&_system=macos&_systemVersion=&"
-        "_screenWidth=1280&_screenHeight=800&_appName=ynote&_appuser=0123456789abcdeffedcba9876543210&"
-        "_vendor=official-website&_launch=16&_firstTime=&_deviceId=0123456789abcdef&_platform=web&"
-        "_cityCode=110000&_cityName=&sev=j1&keyfrom=web&cstk={cstk}"
-    )
-
-    def __init__(self, cookies_path=None):
-        cookies_path = cookies_path or "cookies.json"
+class YoudaoNoteSession:
+    def __init__(self):
         with open(cookies_path, "rb") as fp:
             cookies_dict = json.load(fp)
 
@@ -31,7 +37,7 @@ class YoudaoNoteApi(object):
         except KeyError:
             raise Exception(f"转换「{cookies_path}」为字典时出现错误")
 
-        self._session = requests.Session()  # 使用 session 维持有道云笔记的登陆状态
+        self._session = Session()  # 使用 session 维持有道云笔记的登陆状态
         self._session.headers.update(
             {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -55,9 +61,6 @@ class YoudaoNoteApi(object):
             self._cstk = cookies[0][1]
         else:
             raise ValueError("YNOTE_CSTK 字段为空")
-
-    def login_by_cookies(self):
-        pass
 
     def http_post(self, url, data=None, files=None):
         """
@@ -86,7 +89,7 @@ class YoudaoNoteApi(object):
         }
         """
         data = {"path": "/", "entire": "true", "purge": "false", "cstk": self._cstk}
-        resp = self.http_post(self.ROOT_ID_URL.format(cstk=self._cstk), data=data)
+        resp = self.http_post(ROOT_ID_URL.format(cstk=self._cstk), data=data)
         return resp.json()
 
     def get_dir_info_by_id(self, dir_id) -> dict:
@@ -101,7 +104,7 @@ class YoudaoNoteApi(object):
             ]
         }
         """
-        url = self.DIR_MES_URL.format(dir_id=dir_id, cstk=self._cstk)
+        url = DIR_MES_URL.format(dir_id=dir_id, cstk=self._cstk)
         return self.http_get(url).json()
 
     def get_file_by_id(self, file_id):
@@ -110,7 +113,7 @@ class YoudaoNoteApi(object):
         :param file_id:
         :return: response，内容为笔记字节码
         """
-        url = self.FILE_URL.format(cstk=self._cstk)
+        url = FILE_URL.format(cstk=self._cstk)
         data = {
             "fileId": file_id,
             "version": -1,

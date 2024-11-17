@@ -11,6 +11,8 @@ requests = "^2.22.0"
 markdownify = "^0.5.1"
 Brotli = "^1.0.9"
 win32-setctime = "^1.1.0"
+rtoml = "^0.11.0"
+mashumaro = {extras = ["toml"], version = "^3.14"}
 
 [build-system]
 requires = ["poetry-core"]

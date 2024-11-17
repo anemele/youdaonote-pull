@@ -11,14 +11,8 @@ start_time = time.perf_counter()
 
 try:
     youdaonote_pull = YoudaoNotePull()
-    ydnote_dir_id, error_msg = youdaonote_pull.get_ydnote_dir_id()
-    if error_msg:
-        logging.info(error_msg)
-        sys.exit(1)
     logging.info("正在 pull，请稍后 ...")
-    youdaonote_pull.pull_dir_by_id_recursively(
-        ydnote_dir_id, youdaonote_pull.root_local_dir
-    )
+    youdaonote_pull.pull_recursively()
 except ProxyError:
     logging.info(
         "请检查网络代理设置；也有可能是调用有道云笔记接口次数达到限制，请等待一段时间后重新运行脚本，"
