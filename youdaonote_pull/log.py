@@ -1,23 +1,24 @@
 import logging
 import os
+import os.path as osp
 import sys
 from datetime import datetime
 
-from .common import get_script_directory
+# LOG_FORMAT = "%(asctime)s %(levelname)s %(processName)s-%(threadName)s-%(thread)d %(filename)s:%(lineno)d %(funcName)-10s : %(message)s"
+LOG_FORMAT = "%(asctime)s %(levelname)-10s %(message)s"
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S "
 
-LOG_FORMAT = "%(asctime)s %(levelname)s %(processName)s-%(threadName)s-%(thread)d %(filename)s:%(lineno)d %(funcName)-10s : %(message)s"
-DATE_FORMAT = "%Y/%m/%d %H:%M:%S "
+LOG_DIR = "logs"
+if not osp.exists(LOG_DIR):
+    os.mkdir(LOG_DIR)
+
+LOG_FILE = osp.join(LOG_DIR, f"pull-{datetime.now():%Y%m%d-%H%M%S}.log")
 
 
-def init_logging():
-    log_dir = os.path.join(get_script_directory(), "logs")
-    os.makedirs(log_dir, exist_ok=True)
-    log_filename = os.path.join(
-        log_dir, f"pull-{datetime.now().strftime('%Y%m%d-%H%M%S')}.log"
-    )
+def init():
     logging.basicConfig(
         handlers=[
-            logging.FileHandler(log_filename, "a", encoding="utf-8"),
+            logging.FileHandler(LOG_FILE, "a", encoding="utf-8"),
             logging.StreamHandler(sys.stdout),
         ],
         level=logging.INFO,

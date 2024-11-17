@@ -14,7 +14,6 @@ from win32_setctime import setctime
 
 from . import log
 from .api import YoudaoNoteApi
-from .common import get_script_directory
 from .covert import YoudaoNoteConvert
 from .image import ImagePull
 
@@ -24,7 +23,7 @@ __github__ = "https//github.com/DeppWang/youdaonote-pull"
 REGEX_SYMBOL = re.compile(r'[\\/:\*\?"<>\|]')  # 符号：\ / : * ? " < > |
 MARKDOWN_SUFFIX = ".md"
 
-log.init_logging()
+log.init()
 
 
 class FileType(Enum):
@@ -58,11 +57,8 @@ class YoudaoNotePull(object):
         :return: (config_dict, error_msg)
         """
 
-        config_path = (
-            config_path
-            if config_path
-            else os.path.join(get_script_directory(), "config.json")
-        )
+        config_path = config_path or "config.json"
+
         with open(config_path, "rb") as f:
             config_str = f.read().decode("utf-8")
 
@@ -92,7 +88,7 @@ class YoudaoNotePull(object):
         if not local_dir:
             add_dir = test_default_dir if test_default_dir else "youdaonote"
             # 兼容 Windows 系统，将路径分隔符（\\）替换为 /
-            local_dir = os.path.join(get_script_directory(), add_dir).replace("\\", "/")
+            local_dir = add_dir.replace("\\", "/")
 
         # 如果指定的本地文件夹不存在，创建文件夹
         if not os.path.exists(local_dir):
