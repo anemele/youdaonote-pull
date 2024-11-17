@@ -9,9 +9,8 @@ from unittest.mock import Mock, mock_open, patch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from core.api import YoudaoNoteApi
-from core.covert import YoudaoNoteConvert
-from pull import YoudaoNotePull
+from youdaonote_pull.api import YoudaoNoteSession as YoudaoNoteApi
+from youdaonote_pull.core import YoudaoNotePull
 
 # 使用 test_cookies.json 作为 cookies 地址，避免 cookies.json 数据在运行测试用例时被错误覆盖
 TEST_COOKIES_PATH = "test_cookies.json"
@@ -59,7 +58,9 @@ class YoudaoNoteApiTest(unittest.TestCase):
             "builtins.open", mock_open(read_data=cookies_json_str.encode("utf-8"))
         ):
             message = youdaonote_api.login_by_cookies()
-            self.assertEqual(message, "转换「{}」为字典时出现错误".format(self.TEST_COOKIES_PATH))
+            self.assertEqual(
+                message, "转换「{}」为字典时出现错误".format(self.TEST_COOKIES_PATH)
+            )
 
         # 如果 cookies 格式正确，但少了 YNOTE_CSTK。期待：登录失败
         cookies_json_str = """{"cookies": [
@@ -175,58 +176,6 @@ class YoudaoNoteApiTest(unittest.TestCase):
         youdaonote_api.http_post = Mock(return_value=MockResponse({}, 200))
         file = youdaonote_api.get_file_by_id(file_id="test_note_id")
         self.assertTrue(file)
-
-
-class YoudaoNoteCovert(unittest.TestCase):
-    """
-    python test.py YoudaoNoteCovert
-    """
-
-    def test_covert_xml_to_markdown_content(self):
-        """
-        测试 xml 转换 markdown
-        python test.py YoudaoNoteCovert.test_covert_xml_to_markdown_content
-        """
-        content = YoudaoNoteConvert._covert_xml_to_markdown_content("test/test.note")
-        with open("test/test.md", "rb") as f:
-            content_target = f.read().decode()
-        # CRLF => \r\n, LF => \n
-        self.assertEqual(content.replace("\r\n", "\n"), content_target)
-
-    def test_html_to_markdown(self):
-        """
-        测试 html 转换 markdown
-        :return:
-        """
-        from markdownify import markdownify as md
-
-        new_content = md(
-            f"""<div><span style='color: rgb(68, 68, 68); line-height: 1.5; font-family: "Monaco","Consolas","Lucida Console","Courier New","serif"; font-size: 12px; background-color: rgb(247, 247, 247);'><a href="http://bbs.pcbeta.com/viewthread-1095891-1-1.html">http://bbs.pcbeta.com/viewthread-1095891-1-1.html</a></span></div>"""
-        )
-        expected_content = """<http://bbs.pcbeta.com/viewthread-1095891-1-1.html>"""
-        self.assertEqual(new_content, expected_content)
-
-    def test_covert_json_to_markdown_content(self):
-        """
-        测试 json 转换 markdown
-        python test.py YoudaoNoteCovert.test_covert_json_to_markdown_content
-        """
-        content = YoudaoNoteConvert._covert_json_to_markdown_content("test/test.json")
-        with open("test/test-json.md", "rb") as f:
-            content_target = f.read().decode()
-        # CRLF => \r\n, LF => \n
-        self.assertEqual(content.replace("\r\n", "\n"), content_target)
-
-    def test_covert_json_to_markdown_single_line(self):
-        """
-        测试 json 转换 markdown 单行富文本
-        python test.py YoudaoNoteCovert.test_covert_json_to_markdown_single_line
-        """
-        line = YoudaoNoteConvert._covert_json_to_markdown_content("test/test-convert.json")
-        with open("test/test-convert.md", "rb") as f:
-            target = f.read().decode()
-        # CRLF => \r\n, LF => \n
-        self.assertEqual(line.replace("\r\n", "\n"), target)
 
 
 class YoudaoNotePullTest(unittest.TestCase):

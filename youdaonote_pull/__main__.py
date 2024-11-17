@@ -5,7 +5,7 @@ import traceback
 
 from requests.exceptions import ProxyError, ConnectionError
 
-from . import YoudaoNotePull
+from .core import YoudaoNotePull
 
 start_time = time.perf_counter()
 
