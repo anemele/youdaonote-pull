@@ -1,11 +1,15 @@
-import json
 import os.path as osp
 
 from requests import Session
 
 from .config import CONFIG_DIR
 
-cookies_path = osp.join(CONFIG_DIR, "cookies.json")
+cookies_path = osp.join(CONFIG_DIR, "cookies.txt")
+
+
+def cvt_cookies_to_dict(cookies_str: str):
+    return dict(line.split("=", 1) for line in cookies_str.split("; "))
+
 
 """
 有道云笔记 API 封装
@@ -29,13 +33,8 @@ FILE_URL = (
 
 class YoudaoNoteSession:
     def __init__(self):
-        with open(cookies_path, "rb") as fp:
-            cookies_dict = json.load(fp)
-
-        try:
-            cookies = cookies_dict["cookies"]
-        except KeyError:
-            raise Exception(f"转换「{cookies_path}」为字典时出现错误")
+        with open(cookies_path) as fp:
+            cookies = cvt_cookies_to_dict(fp.read())
 
         self._session = Session()  # 使用 session 维持有道云笔记的登陆状态
         self._session.headers.update(
@@ -50,15 +49,11 @@ class YoudaoNoteSession:
                 "sec-ch-ua-platform": '"macOS"',
             }
         )
-
-        for cookie in cookies:
-            self._session.cookies.set(
-                name=cookie[0], value=cookie[1], domain=cookie[2], path=cookie[3]
-            )
+        self._session.cookies.update(cookies)
 
         # cstk 用于请求时接口验证
-        if "YNOTE_CSTK" == cookies[0][0]:
-            self._cstk = cookies[0][1]
+        if "YNOTE_CSTK" in cookies:
+            self._cstk = cookies["YNOTE_CSTK"]
         else:
             raise ValueError("YNOTE_CSTK 字段为空")
 
