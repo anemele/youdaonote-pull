@@ -1,6 +1,5 @@
 .idea/
 *.iml
-cookies.json
 .python-version
 .history
 __pycache__

@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "youdaonote-pull"
+version = "0.1.0"
+description = ""
+authors = ["deppwang <deppwxq@gmail.com>", "Jason Swift <anemele@outlook.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.22.0"
+markdownify = "^0.5.1"
+Brotli = "^1.0.9"
+win32-setctime = "^1.1.0"
+rtoml = "^0.11.0"
+mashumaro = { extras = ["toml"], version = "^3.14" }
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
